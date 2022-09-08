@@ -7,7 +7,16 @@ contract StadnytsiaToken {
 
     mapping(address => mapping(address => uint)) public allowance;
 
-    mapping(address => bool) private owners;
+    address[] private owners;
+    address[] private candidates;
+
+    struct VoteForCandidate {
+        address owner;
+        address candidate;
+        bool imAgree;
+    }
+
+    VoteForCandidate[] votesForCandidates;
 
     string public name = "StadnytsiaToken";
     string public symbol = "ST";
@@ -17,10 +26,14 @@ contract StadnytsiaToken {
     uint256 private timeToBurn = deployTimeStamp + 5 minutes;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner,address indexed spender,uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     constructor() {
-        owners[msg.sender] = true;
+        owners.push(msg.sender);
         totalSupply = 1000 ether;
         balances[msg.sender] = totalSupply;
     }
@@ -31,7 +44,54 @@ contract StadnytsiaToken {
     }
 
     modifier onlyOwner() {
-        require(owners[msg.sender], "This owner does not exist!");
+        uint256 ArrayLength = owners.length;
+        bool isOwner = false;
+
+        for (uint i = 0; i <= ArrayLength; i++) {
+            if (owners[i] == msg.sender) {
+                isOwner = true;
+                break;
+            }
+        }
+        require(isOwner, "This user is not owner!");
+        _;
+    }
+
+
+    modifier onlyCandidate() {
+        uint256 ArrayLength = candidates.length;
+        bool isCandidate = false;
+
+        for (uint i = 0; i <= ArrayLength; i++) {
+            if (candidates[i] == msg.sender) {
+                isCandidate = true;
+                break;
+            }
+        }
+        require(isCandidate, "This user is not candidate!");
+        _;
+    }
+
+
+    modifier onlyDefUser() {
+        uint256 ArrayLength = candidates.length;
+        bool isDefUser = true;
+        for (uint i = 0; i <= ArrayLength; i++) {
+            if (candidates[i] == msg.sender) {
+                isDefUser = false;
+                break;
+            }
+        }    
+        if (isDefUser){
+        ArrayLength = owners.length;
+        for (uint i = 0; i <= ArrayLength; i++) {
+            if (owners[i] == msg.sender) {
+                isDefUser = false;
+                break;
+            }
+        }
+        }
+        require(isDefUser, "This user is not DefUser!");
         _;
     }
 
@@ -89,4 +149,65 @@ contract StadnytsiaToken {
         emit Transfer(msg.sender, address(0), amount);
     }
 
+    function createApplicationToBecameOwner() external onlyDefUser{
+        candidates.push(msg.sender);
+    }
+
+    function getCandidatesList()
+        external
+        view
+        onlyOwner
+        returns (address[] memory)
+    {
+        return candidates;
+    }
+
+    function getOwnersList()
+        external
+        view
+        onlyOwner
+        returns (address[] memory)
+    {
+        return owners;
+    }
+
+    function getVotesList()
+        external
+        view
+        onlyOwner
+        returns (VoteForCandidate[] memory)
+    {
+        return votesForCandidates;
+    }
+
+    function vote(address _candidate, bool _imAgree) external onlyOwner {
+        VoteForCandidate memory _vote;
+        _vote.owner = msg.sender;
+        _vote.candidate = _candidate;
+        _vote.imAgree = _imAgree;
+
+        votesForCandidates.push(_vote);
+    }
+
+    function checkForMyApplication() external onlyCandidate returns(uint256){
+
+        uint256 _ownersArrayLength = owners.length;
+
+        uint256 _ownersAgreeToConfirm = _ownersArrayLength/2;
+        uint256 _ownersAgree = 0;
+
+        uint256 _votesArrayLength = votesForCandidates.length;
+
+        for (uint i=0; i<=_votesArrayLength;i++){
+            if ((votesForCandidates[i].candidate == msg.sender)&&(votesForCandidates[i].imAgree)){
+
+                _ownersAgree++;
+                
+            }
+        }
+
+        return _ownersAgree;
+        
+
+    }
 }
