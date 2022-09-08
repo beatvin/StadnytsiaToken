@@ -57,7 +57,6 @@ contract StadnytsiaToken {
         _;
     }
 
-
     modifier onlyCandidate() {
         uint256 ArrayLength = candidates.length;
         bool isCandidate = false;
@@ -72,7 +71,6 @@ contract StadnytsiaToken {
         _;
     }
 
-
     modifier onlyDefUser() {
         uint256 ArrayLength = candidates.length;
         bool isDefUser = true;
@@ -81,15 +79,15 @@ contract StadnytsiaToken {
                 isDefUser = false;
                 break;
             }
-        }    
-        if (isDefUser){
-        ArrayLength = owners.length;
-        for (uint i = 0; i <= ArrayLength; i++) {
-            if (owners[i] == msg.sender) {
-                isDefUser = false;
-                break;
-            }
         }
+        if (isDefUser) {
+            ArrayLength = owners.length;
+            for (uint i = 0; i <= ArrayLength; i++) {
+                if (owners[i] == msg.sender) {
+                    isDefUser = false;
+                    break;
+                }
+            }
         }
         require(isDefUser, "This user is not DefUser!");
         _;
@@ -149,7 +147,7 @@ contract StadnytsiaToken {
         emit Transfer(msg.sender, address(0), amount);
     }
 
-    function createApplicationToBecameOwner() external onlyDefUser{
+    function createApplicationToBecameOwner() external onlyDefUser {
         candidates.push(msg.sender);
     }
 
@@ -189,25 +187,62 @@ contract StadnytsiaToken {
         votesForCandidates.push(_vote);
     }
 
-    function checkForMyApplication() external onlyCandidate returns(uint256){
-
+    function checkForMyApplication()
+        external
+        onlyCandidate
+        returns (string memory)
+    {
         uint256 _ownersArrayLength = owners.length;
 
-        uint256 _ownersAgreeToConfirm = _ownersArrayLength/2;
+        uint256 _ownersAgreeToConfirm = _ownersArrayLength / 2;
+
         uint256 _ownersAgree = 0;
+        uint256 _ownersDisagree = 0;
 
         uint256 _votesArrayLength = votesForCandidates.length;
 
-        for (uint i=0; i<=_votesArrayLength;i++){
-            if ((votesForCandidates[i].candidate == msg.sender)&&(votesForCandidates[i].imAgree)){
-
-                _ownersAgree++;
-                
+        for (uint i = 0; i < _votesArrayLength; i++) {
+            if (
+                (votesForCandidates[i].candidate == msg.sender) &&
+                (votesForCandidates[i].imAgree)
+            ) {
+                _ownersAgree += 1;
+            } else if (
+                (votesForCandidates[i].candidate == msg.sender) &&
+                (votesForCandidates[i].imAgree == false)
+            ) {
+                _ownersDisagree += 1;
             }
         }
 
-        return _ownersAgree;
-        
+        if (_ownersAgree > _ownersAgreeToConfirm) {
+            owners.push(msg.sender);
 
+            uint256 candidatesArrayLength = candidates.length;
+
+            for (uint256 i = 0; i < candidatesArrayLength; i++) {
+                if (candidates[i] == msg.sender) {
+                    delete candidates[i];
+                }
+            }
+
+            for (uint256 i = 0; i < _votesArrayLength; i++) {
+                if (votesForCandidates[i].candidate == msg.sender) {
+                    delete votesForCandidates[i];
+                }
+            }
+
+            return "You became an owner!";
+        } else if ((_ownersAgree + _ownersDisagree) == _ownersArrayLength) {
+            for (uint256 i = 0; i < _votesArrayLength; i++) {
+                if (votesForCandidates[i].candidate == msg.sender) {
+                    delete votesForCandidates[i];
+                }
+            }
+
+            return "You are not owner. Your Application was deleted";
+        } else {
+            return "Vote in process";
+        }
     }
 }
