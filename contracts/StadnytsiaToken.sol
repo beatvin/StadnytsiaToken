@@ -234,6 +234,13 @@ contract StadnytsiaToken {
 
             return "You became an owner!";
         } else if ((_ownersAgree + _ownersDisagree) == _ownersArrayLength) {
+            uint256 candidatesArrayLength = candidates.length;
+
+            for (uint256 i = 0; i < candidatesArrayLength; i++) {
+                if (candidates[i] == msg.sender) {
+                    delete candidates[i];
+                }
+            }
             for (uint256 i = 0; i < _votesArrayLength; i++) {
                 if (votesForCandidates[i].candidate == msg.sender) {
                     delete votesForCandidates[i];
